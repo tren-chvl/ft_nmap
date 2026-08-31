@@ -40,5 +40,16 @@ int main(int argc, char *argv[])
 	}
 	print_config(&cfg);
 	printf("Scanning..\n");
+	t_list_j *lst = create_list_job(&cfg);
+	int thread_count;
+	if (cfg.speedup > 0)
+		thread_count = cfg.speedup;
+	else
+		thread_count = 1;
+	pthread_t thread[thread_count];
+	for (int i = 0; i < thread_count; i++)
+		pthread_create(&thread[i], NULL, run_thread, lst);
+	for (int i = 0; i < thread_count;i++)
+		pthread_join(thread[i], NULL);
 	return (0);
 }

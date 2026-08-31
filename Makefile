@@ -2,7 +2,11 @@ NAME =  ft_nmap
 CC = cc
 CFLAGS = -g -Wall -Wextra -Werror -I.
 
-SRC = src/main.c 
+SRC = src/main.c \
+		src/parse.c \
+		src/scan.c \
+		src/thread.c \
+		SRC/scan/scan_syn.c
 
 OBJ = $(SRC:.c=.o)
 

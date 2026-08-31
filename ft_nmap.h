@@ -11,16 +11,17 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/select.h>
+#include <pcap.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <errno.h>
 #include <netinet/ip.h>
+#include <netinet/tcp.h>
 #include <netinet/ip_icmp.h>
-
 
 #define MAX_PORTS 1024
 #define MAX_THREADS 250
-
+#define PCAP_TIMEOUT 1000
 
 typedef struct s_scans
 {
@@ -32,6 +33,20 @@ typedef struct s_scans
 	int udp;
 }   t_scan;
 
+typedef struct s_job
+{
+	char *ip;
+	int port;
+	t_scan scans;
+}	t_job;
+
+typedef struct s_list_j
+{
+	t_job	*jobs;
+	int		count;
+	int		index;
+	p_thread_mutex thread;
+}	t_list_j;
 
 typedef struct s_config
 {
@@ -43,7 +58,17 @@ typedef struct s_config
 	t_scan scans;
 }	t_config;
 
-int		parse_arg(int argc, char *argv[], t_config *cfg);
-void	print_help(void);
+int			parse_arg(int argc, char *argv[], t_config *cfg);
+void		print_help(void);
+t_list_j	*create_list_job(t_config *cfg);
+t_job		*get_next_job(t_list_j *lst);
+void		*run_thread(void *ptr);
+void		run_scan(t_job *job);
+void		run_scan_syn(char *ip, int port);
+void		run_scan_null(char *ip, int port);
+void		run_scan_fin(char *ip, int port);
+void		run_scan_xmas(char *ip, int port);
+void		run_scan_ack(char *ip, int port);
+void		run_scan_udp(char *ip, int port);
 
 #endif
