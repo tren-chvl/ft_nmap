@@ -6,14 +6,20 @@ SRC = src/main.c \
 		src/parse.c \
 		src/scan.c \
 		src/thread.c \
-		SRC/scan/scan_syn.c
+		src/scan/scan_syn.c \
+		src/scan/scan_fin.c \
+		src/scan/scan_ack.c \
+		src/scan/scan_null.c \
+		src/scan/scan_udp.c \
+		src/scan/scan_xmas.c \
+		src/scan/generique.c
 
 OBJ = $(SRC:.c=.o)
 
 all: $(NAME)
 
 $(NAME): $(OBJ)
-	$(CC) $(CFLAGS) -o $(NAME) $(OBJ)
+	$(CC) $(CFLAGS) $(OBJ) -lpcap -pthread -o $(NAME)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@

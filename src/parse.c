@@ -151,7 +151,7 @@ int parse_arg(int argc, char *argv[], t_config *cfg)
 				printf("Missing value for --speedup\n");
 				return -1;
 			}
-			cfg->speedup = argv[i];
+			cfg->speedup = atoi(argv[i]);
 			if (cfg->speedup < 0 || cfg->speedup > MAX_THREADS)
 			{
 				printf("Invalid speedup (0-%d)\n", MAX_THREADS);

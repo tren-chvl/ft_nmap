@@ -1,6 +1,7 @@
 #include "ft_nmap.h"
 
-void build_syn_packet(char *buffer, char *src_ip, char *dst_ip, int dst_port)
+
+void build_ack_packet(char *buffer, char *src_ip, char *dst_ip, int dst_port)
 {
 	struct iphdr *ip = (struct iphdr *)buffer;
 	struct tcphdr *tcp = (struct tcphdr *)(buffer + sizeof(struct iphdr));
@@ -23,26 +24,24 @@ void build_syn_packet(char *buffer, char *src_ip, char *dst_ip, int dst_port)
 	tcp->seq = htonl(0);
 	tcp->ack_seq = 0;
 	tcp->doff = 5;
-	tcp->syn = 1;
+	tcp->ack = 1;
 	tcp->window = htons(65535);
-
 	struct pseudo_header pseudo;
 	pseudo.src = ip->saddr;
 	pseudo.dst = ip->daddr;
 	pseudo.zero = 0;
 	pseudo.proto = IPPROTO_TCP;
 	pseudo.len = htons(sizeof(struct tcphdr));
-
 	char pseudo_packet[4096];
 	memcpy(pseudo_packet, &pseudo, sizeof(pseudo));
 	memcpy(pseudo_packet + sizeof(pseudo), tcp, sizeof(struct tcphdr));
 	tcp->check = checksum((unsigned short *)pseudo_packet, sizeof(pseudo) + sizeof(struct tcphdr));
 }
 
-void listen_syn_response(char *ip, int port)
+void listen_ack_response(char *ip, int port)
 {
 	char errbuf[PCAP_ERRBUF_SIZE];
-	pcap_t *handle = pcap_open_live("enp0s3", 65535, 0, PCAP_TIMEOUT, errbuf);
+	pcap_t *handle = pcap_open_live("enp0s3", 65535, 0, 1000, errbuf);
 	if (!handle)
 	{
 		printf("PCAP error: %s\n", errbuf);
@@ -53,7 +52,7 @@ void listen_syn_response(char *ip, int port)
 	int res = pcap_next_ex(handle, &header, &packet);
 	if (res != 1)
 	{
-		printf("[SYN] %s:%d -> Filtered (no response)\n", ip, port);
+		printf("[ACK] %s:%d -> Filtered (no response)\n", ip, port);
 		pcap_close(handle);
 		return;
 	}
@@ -70,24 +69,20 @@ void listen_syn_response(char *ip, int port)
 		pcap_close(handle);
 		return;
 	}
-	if (tcp->syn && tcp->ack)
-		printf("[SYN] %s:%d -> Open (SYN+ACK)\n", ip, port);
-	else if (tcp->rst)
-		printf("[SYN] %s:%d -> Closed (RST)\n", ip, port);
+	if (tcp->rst)
+		printf("[ACK] %s:%d -> Unfiltered (RST)\n", ip, port);
 	else
-		printf("[SYN] %s:%d -> Filtered (unknown response)\n", ip, port);
+		printf("[ACK] %s:%d -> Filtered (unknown response)\n", ip, port);
 	pcap_close(handle);
 }
 
-
-void run_scan_syn(char *ip, int port)
+void run_scan_ack(char *ip, int port)
 {
-	printf("[SYN] Scanning %s:%d\n", ip, port);
-
-	if (send_tcp_packet(ip, port, build_syn_packet) < 0)
+	printf("[ACK] Scanning %s:%d\n", ip, port);
+	if (send_tcp_packet(ip, port, build_ack_packet) < 0)
 	{
-		printf("[SYN] Failed to send packet\n");
+		printf("[ACK] Failed to send packet\n");
 		return;
 	}
-	listen_syn_response(ip, port);
+	listen_ack_response(ip, port);
 }

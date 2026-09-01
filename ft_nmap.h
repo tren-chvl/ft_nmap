@@ -15,13 +15,25 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <errno.h>
+#include <pthread.h>
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
 #include <netinet/ip_icmp.h>
+#include <netinet/udp.h>
 
 #define MAX_PORTS 1024
 #define MAX_THREADS 250
 #define PCAP_TIMEOUT 1000
+
+
+struct pseudo_header
+{
+	unsigned int src;
+	unsigned int dst;
+	unsigned char zero;
+	unsigned char proto;
+	unsigned short len;
+};
 
 typedef struct s_scans
 {
@@ -45,7 +57,7 @@ typedef struct s_list_j
 	t_job	*jobs;
 	int		count;
 	int		index;
-	p_thread_mutex thread;
+	pthread_mutex_t thread;
 }	t_list_j;
 
 typedef struct s_config
@@ -70,5 +82,10 @@ void		run_scan_fin(char *ip, int port);
 void		run_scan_xmas(char *ip, int port);
 void		run_scan_ack(char *ip, int port);
 void		run_scan_udp(char *ip, int port);
-
+void		build_fin_packet(char *buffer, char *src_ip, char *dst_ip, int dst_port);
+void		build_null_packet(char *buffer,char *src_ip,char *dst_ip, int dst_port);
+void		build_xmas_packet(char *buffer, char *src_ip, char *dst_ip, int dst_port);
+void		listen_tcp_response(char *ip, int port, char *scan_name);
+unsigned short	checksum(unsigned short *ptr, int nbytes);
+int			send_tcp_packet(char *ip, int port, void (*builder)(char *, char *, char *, int));
 #endif
