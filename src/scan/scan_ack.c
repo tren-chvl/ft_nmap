@@ -38,51 +38,87 @@ void build_ack_packet(char *buffer, char *src_ip, char *dst_ip, int dst_port)
 	tcp->check = checksum((unsigned short *)pseudo_packet, sizeof(pseudo) + sizeof(struct tcphdr));
 }
 
-void listen_ack_response(char *ip, int port)
+void listen_ack_response(pcap_t *handle, char *ip, int port)
 {
-	char errbuf[PCAP_ERRBUF_SIZE];
-	pcap_t *handle = pcap_open_live("enp0s3", 65535, 0, 1000, errbuf);
-	if (!handle)
-	{
-		printf("PCAP error: %s\n", errbuf);
-		return;
-	}
 	struct pcap_pkthdr *header;
 	const u_char *packet;
-	int res = pcap_next_ex(handle, &header, &packet);
+	const struct iphdr *iph;
+	const struct tcphdr *tcp;
+	struct timeval timeout;
+	fd_set readfds;
+	int fd;
+	int res;
+
+	printf("[ACK] Waiting for response...\n");
+	fd = pcap_get_selectable_fd(handle);
+	if (fd < 0)
+	{
+		fprintf(stderr, "[ACK] pcap_get_selectable_fd failed\n");
+		return;
+	}
+	FD_ZERO(&readfds);
+	FD_SET(fd, &readfds);
+	timeout.tv_sec = 2;
+	timeout.tv_usec = 0;
+	res = select(fd + 1, &readfds, NULL, NULL, &timeout);
+	if (res == 0)
+	{
+		printf("[ACK] %s:%d -> Filtered \n", ip, port);
+		return;
+	}
+	if (res < 0)
+	{
+		perror("select");
+		return;
+	}
+	res = pcap_next_ex(handle, &header, &packet);
 	if (res != 1)
-	{
-		printf("[ACK] %s:%d -> Filtered (no response)\n", ip, port);
-		pcap_close(handle);
 		return;
-	}
-	const u_char *ip_header = packet + 14;
-	struct iphdr *iph = (struct iphdr *)ip_header;
+	if (header->caplen < 14 + sizeof(struct iphdr))
+		return;
+	iph = (const struct iphdr *)(packet + 14);
+	if (iph->version != 4 || iph->ihl < 5)
+		return;
 	if (iph->protocol != IPPROTO_TCP)
-	{
-		pcap_close(handle);
 		return;
-	}
-	struct tcphdr *tcp = (struct tcphdr *)(ip_header + iph->ihl * 4);
+	if (header->caplen < 14 + (iph->ihl * 4) + sizeof(struct tcphdr))
+		return;
+	tcp = (const struct tcphdr *)(packet + 14 + iph->ihl * 4);
 	if (ntohs(tcp->source) != port)
+		return;
+	if (ntohs(tcp->dest) != 44444)
+		return;
+	if (tcp->rst)
 	{
-		pcap_close(handle);
+		printf("[ACK] %s:%d -> Unfiltered (RST)\n", ip, port);
 		return;
 	}
-	if (tcp->rst)
-		printf("[ACK] %s:%d -> Unfiltered (RST)\n", ip, port);
-	else
-		printf("[ACK] %s:%d -> Filtered (unknown response)\n", ip, port);
-	pcap_close(handle);
+	printf("[ACK] %s:%d -> Filtered (unknown response)\n", ip, port);
 }
 
 void run_scan_ack(char *ip, int port)
 {
+	char errbuf[PCAP_ERRBUF_SIZE];
+	pcap_t *handle;
+
 	printf("[ACK] Scanning %s:%d\n", ip, port);
+	handle = pcap_open_live("enp0s3",65535,1,100,errbuf);
+	if (!handle)
+	{
+		fprintf(stderr, "pcap_open_live: %s\n", errbuf);
+		return;
+	}
+	if (setup_tcp_filter(handle, ip, port) < 0)
+	{
+		pcap_close(handle);
+		return;
+	}
 	if (send_tcp_packet(ip, port, build_ack_packet) < 0)
 	{
 		printf("[ACK] Failed to send packet\n");
+		pcap_close(handle);
 		return;
 	}
-	listen_ack_response(ip, port);
+	listen_ack_response(handle, ip, port);
+	pcap_close(handle);
 }

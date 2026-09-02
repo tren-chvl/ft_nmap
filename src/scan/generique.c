@@ -17,7 +17,7 @@ int send_tcp_packet(char *ip, int port, void (*builder)(char *, char *, char *, 
 		return -1;
 	}
 	char packet[4096];
-	builder(packet, "192.168.1.13", ip, port);
+	builder(packet, "10.11.200.134", ip, port);
 	struct sockaddr_in dst;
 	dst.sin_family = AF_INET;
 	dst.sin_port = htons(port);
@@ -34,41 +34,83 @@ int send_tcp_packet(char *ip, int port, void (*builder)(char *, char *, char *, 
 }
 
 
-
-void listen_tcp_response(char *ip, int port, char *scan_name)
+int setup_tcp_filter(pcap_t *handle, char *ip, int port)
 {
-	char errbuf[PCAP_ERRBUF_SIZE];
-	pcap_t *handle = pcap_open_live("enp0s3", 65535, 0, 1000, errbuf);
-	if (!handle)
+	char					filter[256];
+	struct bpf_program		fp;
+
+	snprintf(filter ,sizeof(filter) ,"tcp and src host %s and src port %d and dst port 44444", ip, port);
+	if (pcap_compile(handle,&fp,filter,1,PCAP_NETMASK_UNKNOWN) == -1)
 	{
-		printf("PCAP error: %s\n", errbuf);
-		return;
+		fprintf(stderr, "pcap_compile: %s\n", pcap_geterr(handle));
+		return (-1);
 	}
+	if (pcap_setfilter(handle, &fp) == -1)
+	{
+		fprintf(stderr, "pcap_setfilter: %s\n", pcap_geterr(handle));
+		pcap_freecode(&fp);
+		return (-1);
+	}
+	pcap_freecode(&fp);
+	return (0);
+}
+
+
+void listen_tcp_response(pcap_t *handle, char *ip, int port, char *scan_name)
+{
 	struct pcap_pkthdr *header;
 	const u_char *packet;
-	int res = pcap_next_ex(handle, &header, &packet);
+	struct timeval timeout;
+	fd_set readfds;
+	int fd;
+	int res;
+
+	printf("[%s] Waiting for response...\n", scan_name);
+	fd = pcap_get_selectable_fd(handle);
+	if (fd < 0)
+	{
+		fprintf(stderr, "pcap_get_selectable_fd failed\n");
+		return ;
+	}
+	FD_ZERO(&readfds);
+	FD_SET(fd, &readfds);
+	timeout.tv_sec = 2;
+	timeout.tv_usec = 0;
+	res = select(fd + 1, &readfds, NULL, NULL, &timeout);
+	if (res == 0)
+	{
+		printf("[%s] %s:%d -> Open|Filtered \n", scan_name, ip, port);
+		return;
+	}
+	if (res < 0)
+	{
+		perror("select");
+		return;
+	}
+	res = pcap_next_ex(handle, &header, &packet);
 	if (res != 1)
-	{
-		printf("[%s] %s:%d -> Open|Filtered (no response)\n", scan_name, ip, port);
-		pcap_close(handle);
 		return;
-	}
-	const u_char *ip_header = packet + 14;
-	struct iphdr *iph = (struct iphdr *)ip_header;
+	if (header->caplen < 14 + sizeof(struct iphdr))
+		return;
+	const struct iphdr *iph = (const struct iphdr *)(packet + 14);
+	if (iph->version != 4 || iph->ihl < 5)
+		return;
 	if (iph->protocol != IPPROTO_TCP)
-	{
-		pcap_close(handle);
 		return;
-	}
-	struct tcphdr *tcp = (struct tcphdr *)(ip_header + iph->ihl * 4);
+	if (header->caplen < 14 + iph->ihl * 4 + sizeof(struct tcphdr))
+		return;
+	const struct tcphdr *tcp = (const struct tcphdr *)(packet + 14 + iph->ihl * 4);
 	if (ntohs(tcp->source) != port)
+		return;
+	if (ntohs(tcp->dest) != 44444)
+		return;
+	if (tcp->rst)
 	{
-		pcap_close(handle);
+		printf("[%s] %s:%d -> Closed (RST)\n",
+			scan_name, ip, port);
 		return;
 	}
-	if (tcp->rst)
-		printf("[%s] %s:%d -> Closed (RST)\n", scan_name, ip, port);
-	else
-		printf("[%s] %s:%d -> Open|Filtered (unknown response)\n", scan_name, ip, port);
-	pcap_close(handle);
+	printf("[%s] %s:%d -> Open|Filtered (unknown response)\n", scan_name, ip, port);
 }
+
+

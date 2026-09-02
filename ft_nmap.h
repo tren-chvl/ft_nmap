@@ -85,7 +85,8 @@ void		run_scan_udp(char *ip, int port);
 void		build_fin_packet(char *buffer, char *src_ip, char *dst_ip, int dst_port);
 void		build_null_packet(char *buffer,char *src_ip,char *dst_ip, int dst_port);
 void		build_xmas_packet(char *buffer, char *src_ip, char *dst_ip, int dst_port);
-void		listen_tcp_response(char *ip, int port, char *scan_name);
 unsigned short	checksum(unsigned short *ptr, int nbytes);
 int			send_tcp_packet(char *ip, int port, void (*builder)(char *, char *, char *, int));
+void listen_tcp_response(pcap_t *handle, char *ip, int port, char *scan_name);
+int setup_tcp_filter(pcap_t *handle, char *ip, int port);
 #endif

@@ -40,11 +40,38 @@ void build_fin_packet(char *buffer, char *src_ip, char *dst_ip, int dst_port)
 
 void run_scan_fin(char *ip, int port)
 {
+	char errbuf[PCAP_ERRBUF_SIZE];
+	pcap_t *handle;
+
 	printf("[FIN] Scanning %s:%d\n", ip, port);
+	handle = pcap_open_live(
+		"enp0s3",
+		65535,
+		1,
+		100,
+		errbuf
+	);
+
+	if (!handle)
+	{
+		fprintf(stderr, "pcap_open_live: %s\n", errbuf);
+		return;
+	}
+
+	if (setup_tcp_filter(handle, ip, port) < 0)
+	{
+		pcap_close(handle);
+		return;
+	}
+
 	if (send_tcp_packet(ip, port, build_fin_packet) < 0)
 	{
 		printf("[FIN] Failed to send packet\n");
+		pcap_close(handle);
 		return;
 	}
-	listen_tcp_response(ip, port, "FIN");
+
+	listen_tcp_response(handle, ip, port, "FIN");
+
+	pcap_close(handle);
 }

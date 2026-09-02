@@ -38,7 +38,6 @@ void build_null_packet(char *buffer, char *src_ip, char *dst_ip, int dst_port)
 	pseudo.zero = 0;
 	pseudo.proto = IPPROTO_TCP;
 	pseudo.len = htons(sizeof(struct tcphdr));
-
 	char pseudo_packet[4096];
 	memcpy(pseudo_packet, &pseudo, sizeof(pseudo));
 	memcpy(pseudo_packet + sizeof(pseudo), tcp, sizeof(struct tcphdr));
@@ -48,11 +47,26 @@ void build_null_packet(char *buffer, char *src_ip, char *dst_ip, int dst_port)
 
 void run_scan_null(char *ip, int port)
 {
-	printf("[NULL] Scanning %s:%d\n", ip, port);
-	if (send_tcp_packet(ip, port, build_null_packet) < 0)
-	{
-		printf("[NULL] Failed to send packet\n");
-		return;
-	}
-	listen_tcp_response(ip, port, "NULL");
+    char errbuf[PCAP_ERRBUF_SIZE];
+    pcap_t *handle;
+
+    printf("[NULL] Scanning %s:%d\n", ip, port);
+    handle = pcap_open_live("enp0s3",65535,1,100,errbuf);
+    if (!handle)
+    {
+        fprintf(stderr, "pcap_open_live: %s\n", errbuf);
+        return;
+    }
+    if (setup_tcp_filter(handle, ip, port) < 0)
+    {
+        pcap_close(handle);
+        return;
+    }
+    if (send_tcp_packet(ip, port, build_null_packet) < 0)
+    {
+        pcap_close(handle);
+        return;
+    }
+    listen_tcp_response(handle, ip, port, "NULL");
+    pcap_close(handle);
 }

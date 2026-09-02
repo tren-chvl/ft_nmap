@@ -7,12 +7,12 @@ SRC = src/main.c \
 		src/scan.c \
 		src/thread.c \
 		src/scan/scan_syn.c \
-		src/scan/scan_fin.c \
-		src/scan/scan_ack.c \
 		src/scan/scan_null.c \
-		src/scan/scan_udp.c \
+		src/scan/generique.c \
+		src/scan/scan_fin.c \
 		src/scan/scan_xmas.c \
-		src/scan/generique.c
+		src/scan/scan_ack.c \
+		src/scan/scan_udp.c 
 
 OBJ = $(SRC:.c=.o)
 
