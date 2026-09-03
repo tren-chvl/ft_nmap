@@ -47,24 +47,36 @@ void	build_syn_packet(char *buffer, char *src_ip, char *dst_ip, int dst_port)
 	tcp->check = checksum((unsigned short *)pseudo_packet,sizeof(pseudo) + sizeof(struct tcphdr));
 }
 
-
-
-void	listen_syn_response(pcap_t *handle, char *ip, int port)
+void	listen_syn_response(pcap_t *handle, char *ip, int port, int os_detect)
 {
-	struct pcap_pkthdr		*header;
-	const u_char			*packet;
-	const struct iphdr		*iph;
-	const struct tcphdr		*tcp;
-	struct timeval			timeout;
-	fd_set					readfds;
-	int						fd;
-	int						res;
-
+	char				filter[256];
+	struct bpf_program	fp;
+	struct pcap_pkthdr	*header;
+	const u_char		*packet;
+	struct iphdr	*iph;
+	struct tcphdr	*tcp;
+	struct timeval		timeout;
+	fd_set				readfds;
+	int					fd;
+	int					res;
+	snprintf(filter,sizeof(filter),"tcp and src host %s and src port %d and dst port 44444",ip,port);
+	if (pcap_compile(handle, &fp, filter, 1, PCAP_NETMASK_UNKNOWN) == -1)
+	{
+		fprintf(stderr, "pcap_compile: %s\n", pcap_geterr(handle));
+		return;
+	}
+	if (pcap_setfilter(handle, &fp) == -1)
+	{
+		fprintf(stderr, "pcap_setfilter: %s\n", pcap_geterr(handle));
+		pcap_freecode(&fp);
+		return;
+	}
+	pcap_freecode(&fp);
 	printf("[SYN] Waiting for response...\n");
 	fd = pcap_get_selectable_fd(handle);
 	if (fd < 0)
-	{
-		fprintf(stderr, "[SYN] pcap_get_selectable_fd failed\n");
+	{		
+		printf("[SYN] %s:%d -> Filtered (no response)\n",ip,port);
 		return;
 	}
 	FD_ZERO(&readfds);
@@ -74,7 +86,7 @@ void	listen_syn_response(pcap_t *handle, char *ip, int port)
 	res = select(fd + 1, &readfds, NULL, NULL, &timeout);
 	if (res == 0)
 	{
-		printf("[SYN] %s:%d -> Filtered \n", ip, port);
+		printf("[SYN] %s:%d -> Filtered (no response)\n",ip,port);
 		return;
 	}
 	if (res < 0)
@@ -83,63 +95,50 @@ void	listen_syn_response(pcap_t *handle, char *ip, int port)
 		return;
 	}
 	res = pcap_next_ex(handle, &header, &packet);
-	if (res == 0)
+	if (res != 1)
 	{
-		printf("[SYN] %s:%d -> Filtered (no response)\n", ip, port);
+		printf("[SYN] %s:%d -> Filtered (no response)\n",ip,port);
 		return;
 	}
-	if (res == -1)
-	{
-		fprintf(stderr, "pcap_next_ex: %s\n", pcap_geterr(handle));
-		return;
-	}
-	if (res == -2)
-		return;
 	if (header->caplen < 14 + sizeof(struct iphdr))
 		return;
-	iph = (const struct iphdr *)(packet + 14);
+	iph = (struct iphdr *)(packet + 14);
 	if (iph->version != 4 || iph->ihl < 5)
 		return;
 	if (iph->protocol != IPPROTO_TCP)
 		return;
 	if (header->caplen < 14 + (iph->ihl * 4) + sizeof(struct tcphdr))
 		return;
-	tcp = (const struct tcphdr *)(packet + 14 + (iph->ihl * 4));
+	tcp = (struct tcphdr *)(packet + 14 + (iph->ihl * 4)
+	);
 	if (ntohs(tcp->source) != port)
 		return;
 	if (ntohs(tcp->dest) != 44444)
 		return;
 	if (tcp->syn && tcp->ack)
 	{
-		printf("[SYN] %s:%d -> Open (SYN+ACK)\n", ip, port);
-		printf("[OS] Possible OS: %s\n", detect_os(iph, tcp));
+		printf("[SYN] %s:%d -> Open (SYN+ACK)\n",ip,port);
+		if (os_detect)
+        	printf("[OS] Possible OS: %s\n", detect_os(iph, tcp));
 		return;
 	}
 	if (tcp->rst)
 	{
-		printf("[SYN] %s:%d -> Closed (RST)\n", ip, port);
+		printf("[SYN] %s:%d -> Closed (RST)\n",ip,port);
 		return;
 	}
-	printf("[SYN] %s:%d -> Filtered (unknown response)\n", ip, port);
+	printf("[SYN] %s:%d -> Filtered (unknown response)\n",ip,port);
 }
 
-
-
-void	run_scan_syn(char *ip, int port)
+void	run_scan_syn(char *ip, int port, int os_detect)
 {
 	char	errbuf[PCAP_ERRBUF_SIZE];
 	pcap_t	*handle;
-
 	printf("[SYN] Scanning %s:%d\n", ip, port);
-	handle = pcap_open_live("enp0s3",65535,1,100,errbuf);
+	handle = pcap_open_live("wlp9s0",65535,1,100,errbuf);
 	if (!handle)
 	{
-		fprintf(stderr, "pcap_open_live: %s\n", errbuf);
-		return;
-	}
-	if (setup_tcp_filter(handle, ip, port) < 0)
-	{
-		pcap_close(handle);
+		fprintf(stderr,"pcap_open_live: %s\n",errbuf);
 		return;
 	}
 	if (send_tcp_packet(ip, port, build_syn_packet) < 0)
@@ -148,6 +147,6 @@ void	run_scan_syn(char *ip, int port)
 		pcap_close(handle);
 		return;
 	}
-	listen_syn_response(handle, ip, port);
+	listen_syn_response(handle, ip, port, os_detect);
 	pcap_close(handle);
 }

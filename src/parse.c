@@ -102,7 +102,8 @@ void	print_help(void)
 	printf("--ip ip address to scan in dot format\n");
 	printf("--file File name containing IP addresses to scan\n");
 	printf("--speedup [250 max] number of parallel threads to use\n");
-	printf("--scan SYN/NULL/FIN/XMAS/ACK/UDP\n");	
+	printf("--scan SYN/NULL/FIN/XMAS/ACK/UDP\n");
+	printf("--os                        Detect the operating system\n");	
 }
 
 int parse_arg(int argc, char *argv[], t_config *cfg)
@@ -168,6 +169,10 @@ int parse_arg(int argc, char *argv[], t_config *cfg)
 			if (parse_scan(argv[i], &cfg->scans) < 0)
 				return -1;
 		}
+		else if (!strcmp(argv[i], "--os"))
+			cfg->os_detect = 1;
+		else if (!strcmp(argv[i], "--evasion"))
+			cfg->evasion = 1;
 		else
 		{
 			printf("Unknown option: %s\n", argv[i]);

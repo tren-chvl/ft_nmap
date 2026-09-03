@@ -27,7 +27,7 @@ unsigned short checksum(unsigned short *ptr, int nbytes)
 void run_scan(t_job *job)
 {
 	if (job->scans.syn)
-		run_scan_syn(job->ip, job->port);
+		run_scan_syn(job->ip, job->port, job->os_detect);
 	if (job->scans.null_scan)
 		run_scan_null(job->ip, job->port);
 	if (job->scans.fin)

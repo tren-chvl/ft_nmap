@@ -45,7 +45,7 @@ void run_scan_xmas(char *ip, int port)
     pcap_t *handle;
 
     printf("[XMAS] Scanning %s:%d\n", ip, port);
-    handle = pcap_open_live("enp0s3",65535,1,100,errbuf);
+    handle = pcap_open_live("wlp9s0",65535,1,100,errbuf);
     if (!handle)
     {
         fprintf(stderr, "pcap_open_live: %s\n", errbuf);

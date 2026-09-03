@@ -49,6 +49,8 @@ typedef struct s_job
 {
 	char *ip;
 	int port;
+	int os_detect;
+	int	evasion;
 	t_scan scans;
 }	t_job;
 
@@ -67,6 +69,8 @@ typedef struct s_config
 	char	*ip;
 	char	*file;
 	int		speedup;
+	int		os_detect;
+	int		evasion;
 	t_scan	scans;
 }	t_config;
 
@@ -76,12 +80,14 @@ t_list_j	*create_list_job(t_config *cfg);
 t_job		*get_next_job(t_list_j *lst);
 void		*run_thread(void *ptr);
 void		run_scan(t_job *job);
-void		run_scan_syn(char *ip, int port);
+
+void		run_scan_syn(char *ip, int port, int os_detection);
 void		run_scan_null(char *ip, int port);
 void		run_scan_fin(char *ip, int port);
 void		run_scan_xmas(char *ip, int port);
 void		run_scan_ack(char *ip, int port);
 void		run_scan_udp(char *ip, int port);
+
 void		build_fin_packet(char *buffer, char *src_ip, char *dst_ip, int dst_port);
 void		build_null_packet(char *buffer,char *src_ip,char *dst_ip, int dst_port);
 void		build_xmas_packet(char *buffer, char *src_ip, char *dst_ip, int dst_port);
@@ -91,4 +97,5 @@ void		listen_tcp_response(pcap_t *handle, char *ip, int port, char *scan_name);
 int			setup_tcp_filter(pcap_t *handle, char *ip, int port);
 int			resolve_hostname(char *hostname, char *ip, size_t ip_size);
 char		*detect_os(struct iphdr *ip, struct tcphdr *tcp);
+void apply_evasion(char *packet, int packet_len);
 #endif

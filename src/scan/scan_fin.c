@@ -45,7 +45,7 @@ void run_scan_fin(char *ip, int port)
 
 	printf("[FIN] Scanning %s:%d\n", ip, port);
 	handle = pcap_open_live(
-		"enp0s3",
+		"wlp9s0",
 		65535,
 		1,
 		100,

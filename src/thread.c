@@ -16,6 +16,7 @@ t_list_j *create_list_job(t_config *cfg)
 		lst->jobs[i].ip = cfg->ip;
 		lst->jobs[i].port = cfg->port[i];
 		lst->jobs[i].scans = cfg->scans;
+		lst->jobs[i].os_detect = cfg->os_detect;
 	}
 	return lst;
 }

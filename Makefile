@@ -6,15 +6,17 @@ SRC = src/main.c \
 		src/parse.c \
 		src/scan.c \
 		src/thread.c \
+		src/bonus/DNS.c \
+		src/bonus/detect_os.c \
+		src/scan/generique.c \
 		src/scan/scan_syn.c \
 		src/scan/scan_null.c \
-		src/scan/generique.c \
 		src/scan/scan_fin.c \
 		src/scan/scan_xmas.c \
 		src/scan/scan_ack.c \
-		src/scan/scan_udp.c \
-		src/bonus/DNS.c \
-		src/bonus/detect_os.c
+		src/scan/scan_udp.c 
+#		src/bonus/evasion.c 
+
 
 OBJ = $(SRC:.c=.o)
 
