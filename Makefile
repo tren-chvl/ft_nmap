@@ -12,7 +12,9 @@ SRC = src/main.c \
 		src/scan/scan_fin.c \
 		src/scan/scan_xmas.c \
 		src/scan/scan_ack.c \
-		src/scan/scan_udp.c 
+		src/scan/scan_udp.c \
+		src/bonus/DNS.c \
+		src/bonus/detect_os.c
 
 OBJ = $(SRC:.c=.o)
 

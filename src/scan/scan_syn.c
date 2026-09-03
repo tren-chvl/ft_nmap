@@ -74,7 +74,7 @@ void	listen_syn_response(pcap_t *handle, char *ip, int port)
 	res = select(fd + 1, &readfds, NULL, NULL, &timeout);
 	if (res == 0)
 	{
-		printf("[SYN] %s:%d -> Filtered (no response)\n", ip, port);
+		printf("[SYN] %s:%d -> Filtered \n", ip, port);
 		return;
 	}
 	if (res < 0)
@@ -112,6 +112,7 @@ void	listen_syn_response(pcap_t *handle, char *ip, int port)
 	if (tcp->syn && tcp->ack)
 	{
 		printf("[SYN] %s:%d -> Open (SYN+ACK)\n", ip, port);
+		printf("[OS] Possible OS: %s\n", detect_os(iph, tcp));
 		return;
 	}
 	if (tcp->rst)

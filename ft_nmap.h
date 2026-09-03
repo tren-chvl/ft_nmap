@@ -62,12 +62,12 @@ typedef struct s_list_j
 
 typedef struct s_config
 {
-	int port[MAX_PORTS];
-	int port_count;
-	char *ip;
-	char *file;
-	int speedup;
-	t_scan scans;
+	int		port[MAX_PORTS];
+	int		port_count;
+	char	*ip;
+	char	*file;
+	int		speedup;
+	t_scan	scans;
 }	t_config;
 
 int			parse_arg(int argc, char *argv[], t_config *cfg);
@@ -87,6 +87,8 @@ void		build_null_packet(char *buffer,char *src_ip,char *dst_ip, int dst_port);
 void		build_xmas_packet(char *buffer, char *src_ip, char *dst_ip, int dst_port);
 unsigned short	checksum(unsigned short *ptr, int nbytes);
 int			send_tcp_packet(char *ip, int port, void (*builder)(char *, char *, char *, int));
-void listen_tcp_response(pcap_t *handle, char *ip, int port, char *scan_name);
-int setup_tcp_filter(pcap_t *handle, char *ip, int port);
+void		listen_tcp_response(pcap_t *handle, char *ip, int port, char *scan_name);
+int			setup_tcp_filter(pcap_t *handle, char *ip, int port);
+int			resolve_hostname(char *hostname, char *ip, size_t ip_size);
+char		*detect_os(struct iphdr *ip, struct tcphdr *tcp);
 #endif

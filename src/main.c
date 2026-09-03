@@ -38,6 +38,15 @@ int main(int argc, char *argv[])
 		printf("Error: invalid arguments\n");
 		return 1;
 	}
+	if (cfg.ip)
+	{
+		char resolved_ip[INET_ADDRSTRLEN];
+		if (resolve_hostname(cfg.ip, resolved_ip, sizeof(resolved_ip)) == 0)
+		{
+			printf("DNS: %s -> %s\n", cfg.ip, resolved_ip);
+			cfg.ip = resolved_ip;
+		}
+	}
 	print_config(&cfg);
 	printf("Scanning..\n");
 	t_list_j *lst = create_list_job(&cfg);
@@ -53,3 +62,4 @@ int main(int argc, char *argv[])
 		pthread_join(thread[i], NULL);
 	return (0);
 }
+

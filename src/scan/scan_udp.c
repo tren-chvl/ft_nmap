@@ -95,7 +95,7 @@ void listen_udp_response(pcap_t *handle, char *ip, int port)
 	res = select(fd + 1, &readfds, NULL, NULL, &timeout);
 	if (res == 0)
 	{
-		printf("[UDP] %s:%d -> Open|Filtered (no response)\n",ip, port);
+		printf("[UDP] %s:%d -> Open|Filtered\n",ip, port);
 		return;
 	}
 	if (res < 0)
