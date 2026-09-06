@@ -1,17 +1,17 @@
-# ft_nmap
+# ft_nmap 👁️
+
 
 <p align="center">
-  <img src="https://img.shields.io/badge/C-42-black?style=for-the-badge&logo=c" alt="C">
-  <img src="https://img.shields.io/badge/Linux-Networking-orange?style=for-the-badge&logo=linux" alt="Linux">
-  <img src="https://img.shields.io/badge/libpcap-Packet%20Capture-blue?style=for-the-badge" alt="libpcap">
-  <img src="https://img.shields.io/badge/pthreads-Multithreading-green?style=for-the-badge" alt="pthread">
+  <img src="assets/nmap_cyber_animated.gif" width="800" alt="Nmap">
 </p>
-
-<h3 align="center">A lightweight Nmap-inspired port scanner written in C</h3>
 
 <p align="center">
-  <b>42 School Project</b> — Raw sockets · libpcap · TCP/UDP scanning · packet analysis
+  <img src="https://img.shields.io/badge/-grey?style=for-the-badge&logo=c" >
+  <img src="https://img.shields.io/badge/-Networking-grey?style=for-the-badge&logo=linux" alt="Linux">
+  <img src="https://img.shields.io/badge/-Multithreading-grey?style=for-the-badge" alt="Linux">
 </p>
+
+<h3 align="center">A Nmap-inspired port scanner written in C</h3>
 
 ---
 
@@ -530,27 +530,6 @@ sudo ./ft_nmap \
     --speedup 10
 ```
 
----
-
-# 📸 Screenshots
-
-> Add your own screenshots in `assets/` to document the project.
-
-### SYN scan
-
-![SYN scan](assets/syn-scan.png)
-
-### UDP scan
-
-![UDP scan](assets/udp-scan.png)
-
-### XMAS scan
-
-![XMAS scan](assets/xmas-scan.png)
-
-### Packet capture
-
-![Wireshark / tcpdump](assets/packet-capture.png)
 
 ---
 
@@ -612,8 +591,6 @@ ft_nmap/
         └── scan_udp.c
 ```
 
-The repository currently follows this structure, with the individual scan implementations grouped under `src/scan/`.
-
 ---
 
 # 🧪 Testing
@@ -642,7 +619,7 @@ sudo nmap -Pn -sX -p 80 8.8.8.8
 sudo nmap -Pn -sU -p 80 8.8.8.8
 ```
 
-The goal is not to reproduce every feature of Nmap, but to understand and reproduce the core packet-scanning mechanisms.
+
 
 ---
 
@@ -715,10 +692,7 @@ This project focuses on low-level networking concepts:
 
 ## 👤 Author
 
-**tren-chvl**
-
-42 School — ft_nmap
 
 <p align="center">
-  <i>Built from packets, headers and a lot of tcpdump.</i> 🐾
+  <i>tren-chvl</i>
 </p>
